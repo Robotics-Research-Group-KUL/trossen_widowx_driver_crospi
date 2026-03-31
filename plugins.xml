@@ -1,0 +1,5 @@
+<library path="trossen_widowx_driver_crospi">
+  <class type="etasl::trossen_widowx_driver_crospi" base_class_type="etasl::RobotDriver">
+    <description>This is a plugin template compatible with etasl ROS2 node.</description>
+  </class>
+</library>
