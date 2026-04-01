@@ -4,7 +4,8 @@ This package contains a driver for controlling the Trossen WidowX using crospi_c
 
 ## Installation
 
-Install the [C++ trossen driver](https://docs.trossenrobotics.com/trossen_arm/main/getting_started/software_setup.html) before compiling the crospi trossen driver.
+Clone the [interfaces package](https://github.com/Robotics-Research-Group-KUL/trossen_widowx_interfaces) in your workspace.
+Install the [C++ trossen driver](https://docs.trossenrobotics.com/trossen_arm/main/getting_started/software_setup.html) before compiling the crospi trossen driver. 
 
 ## Documentation
 
