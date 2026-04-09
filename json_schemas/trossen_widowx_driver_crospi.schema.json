@@ -13,7 +13,7 @@
     "additionalProperties": true,
     "dependencies":{
         "is-trossen_widowx_driver_crospi":{
-          "required":["ip_address", "control_mode"],
+          "required":["ip_address", "control_mode", "periodicity"],
           "properties":{
             "ip_address" : {
                     "description":"IP address of the robot using Ipv4 format.",
@@ -25,6 +25,11 @@
                 "description": "Control mode for the robot arm.",
                 "type": "string",
                 "enum": ["JOINT_POSITION", "JOINT_VELOCITY"]
+            },
+            "periodicity" : {
+                "description":"Periodicity in which the integration will be performed in seconds. 1/periodicity is the update frequency in Hz.",
+                "type":"number",
+                "default": 0.005
             }
           }
         }
