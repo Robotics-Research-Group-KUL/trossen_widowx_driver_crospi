@@ -73,6 +73,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(src_trossen_widowx_driver_crospi
     src/trossen_widowx_driver_crospi.cpp
+    src/trossen_widowx_leader_follower_driver_crospi.cpp
 )
 
 add_library(trossen_widowx_driver_crospi 
