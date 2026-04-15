@@ -368,7 +368,7 @@ void trossen_widowx_leader_follower_driver_crospi::update(volatile std::atomic<b
             // leader_joint_external_efforts_setpoints_[i] =  -force_feedback_gain * follower_joint_external_efforts_feedback_[i] + K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i]); //External torque setpoints for leader
             // leader_joint_external_efforts_setpoints_[i] =  -force_feedback_gain * follower_joint_external_efforts_feedback_[i] + K_p * (lead_gain*crospi_joint_velocity_setpoints_[i]*periodicity); //Same as  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
             
-            //Option without haptic feedback, just a spring for the leader robot:
+            //-------------Option without haptic feedback, just a spring for the leader robot:
             // follower_joint_position_setpoints_[i] += crospi_joint_velocity_setpoints_[i]*periodicity;
             // leader_joint_external_efforts_setpoints_[i] = K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
             //                                             + K_d * (crospi_joint_velocity_setpoints_[i] - leader_output_.joint.arm.velocities[i]); //Same as  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
@@ -379,7 +379,7 @@ void trossen_widowx_leader_follower_driver_crospi::update(volatile std::atomic<b
             // leader_joint_external_efforts_setpoints_[i] = -force_feedback_gain * follower_joint_external_efforts_feedback_[i] + K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i]); //Same as  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
             
 
-            // Option 2: the second one that we tried, now with velocity term:
+            // ----------Option 2: the second one that we tried, now with velocity term:
             follower_joint_position_setpoints_[i] = leader_output_.joint.arm.positions[i]; //Position setpoints for follower
             
             leader_joint_position_setpoints_[i] += crospi_joint_velocity_setpoints_[i]*periodicity; //simple integration (open loop)
