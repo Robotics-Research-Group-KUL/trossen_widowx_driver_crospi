@@ -29,49 +29,72 @@ class trossen_widowx_leader_follower_driver_crospi : public RobotDriver {
     private:
 
         // The driver for the robot
-        std::unique_ptr<trossen_arm::TrossenArmDriver> arm_driver_{nullptr};
+        std::unique_ptr<trossen_arm::TrossenArmDriver> follower_driver_{nullptr};
+        std::unique_ptr<trossen_arm::TrossenArmDriver> leader_driver_{nullptr};
         // IP address of the driver this hardware interface connects to
-        std::string driver_ip_address_;
-        // Periodicity of the driver
-        double periodicity;
+        std::string driver_ip_address_follower_;
+        std::string driver_ip_address_leader_;
+
+        
+        double periodicity; // Periodicity of the driver
         double lead_gain;
         double safety_velocity_threshold;
+        double safety_torque_threshold;
+        bool move_to_home_position_on_startup;
+        double force_feedback_gain;
 
-        std::vector<double> initial_joints;
-        std::vector<double> vel_setpoint;
-        int DOF;
+        // std::vector<double> initial_joints_follower;
+        // std::vector<double> initial_joints_leader;
 
-        robotdrivers::DynamicJointDataField setpoint_joint_vel_struct;
-        robotdrivers::DynamicJointDataField joint_pos_struct;
-        robotdrivers::DynamicJointDataField joint_vel_struct;
+        // std::vector<double> vel_setpoint_follower;
+        unsigned int DOF;
+
+        robotdrivers::DynamicJointDataField follower_setpoint_joint_vel_struct;
+        robotdrivers::DynamicJointDataField follower_joint_pos_struct;
+        robotdrivers::DynamicJointDataField follower_joint_vel_struct;
 
         // Robot output 
-        trossen_arm::RobotOutput robot_output_;
+        trossen_arm::RobotOutput follower_output_;
+        trossen_arm::RobotOutput leader_output_;
+
 
         std::shared_ptr<rclcpp::Node> ros_node_;
-        rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr gripper_sub_;
+        // rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr gripper_sub_;
         std::thread ros_thread_;
         
         std::string control_mode;
         
         // Robot setpoints
-        std::vector<double> arm_joint_position_setpoints_;
-        std::vector<double> arm_joint_velocity_setpoints_;
+        std::vector<double> follower_joint_position_setpoints_;
+        std::vector<double> follower_joint_velocity_setpoints_;
+
+        std::vector<double> amplified_follower_joint_velocity_setpoints_;
+
+
+        // std::vector<double> leader_joint_position_setpoints_;
+        // std::vector<double> leader_joint_velocity_setpoints_;
+        std::vector<double> leader_joint_external_efforts_setpoints_;
+
+        std::vector<double> leader_joint_external_efforts_feedback_;
+        std::vector<double> follower_joint_external_efforts_feedback_;
+
+
+
 
         // ROS publishers
-        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
-        rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr wrench_pub_;
+        // rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr follower_joint_state_pub_;
+        // rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr wrench_pub_;
 
         // ROS services
-        rclcpp::Service<trossen_widowx_interfaces::srv::ArmMode>::SharedPtr set_up_arm_mode_srv_;
+        rclcpp::Service<trossen_widowx_interfaces::srv::ArmMode>::SharedPtr set_up_follower_mode_srv_;
         rclcpp::Service<trossen_widowx_interfaces::srv::ControlGripper>::SharedPtr control_gripper_srv_;
 
         // ROS messages
-        sensor_msgs::msg::JointState joint_state_msg;
-        geometry_msgs::msg::Wrench wrench_msg;
+        // sensor_msgs::msg::JointState joint_state_msg;
+        // geometry_msgs::msg::Wrench wrench_msg;
 
         // Time of the last loop
-        rclcpp::Time loop_time;
+        // rclcpp::Time loop_time;
 
         // Mutex to lock update
         std::mutex update_mutex_;

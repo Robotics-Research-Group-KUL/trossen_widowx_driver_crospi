@@ -13,7 +13,7 @@
     "additionalProperties": true,
     "dependencies":{
         "is-trossen_widowx_leader_follower_driver_crospi":{
-          "required":["ip_address_follower", "ip_address_leader", "control_mode", "periodicity", "lead_gain"],
+          "required":["ip_address_follower", "ip_address_leader", "control_mode", "periodicity", "lead_gain", "safety_velocity_threshold", "safety_torque_threshold", "move_to_home_position_on_startup", "force_feedback_gain"],
           "properties":{
             "ip_address_leader" : {
                     "description":"IP address of the leader robot using Ipv4 format.",
@@ -44,12 +44,30 @@
                 "default": 4,
                 "minimum": 0
             },
+            "safety_torque_threshold" : {
+                "description":"Threshold for safety torque. If any of the joints of one of the robots exceeds this torque, the driver will stop both robots. Units are in Nm.",
+                "type":"number",
+                "default": 0.5,
+                "minimum": 0
+            },
             "safety_velocity_threshold" : {
                 "description":"Threshold for safety velocity. If any of the joints of one of the robots exceeds this velocity, the driver will stop both robots. Units are in radians per second.",
                 "type":"number",
                 "default": 0.5,
                 "minimum": 0
-            }
+            },
+            "move_to_home_position_on_startup" : {
+                "description":"Whether the driver should move both robots to a predefined home position on startup, before control with Crospi. Make sure that the workspace of the robot is free before starting.",
+                "type":"boolean",
+                "default": true
+            },
+            "force_feedback_gain" : {
+                "description":"Gain for the force feedback from the follower to the leader. Higher values will result in stronger forces felt on the leader robot in response to forces applied on the follower robot. Modify with caution: it can cause unstable behavior. ",
+                "type":"number",
+                "default": 0.1,
+                "minimum": 0, 
+                "maximum": 1
+             }
           }
         }
       }
