@@ -42,7 +42,9 @@ class trossen_widowx_leader_follower_driver_crospi : public RobotDriver {
         double safety_torque_threshold;
         bool move_to_home_position_on_startup;
         double force_feedback_gain;
-
+        double K_p;
+        double K_d;
+        
         // std::vector<double> initial_joints_follower;
         // std::vector<double> initial_joints_leader;
 
@@ -66,13 +68,14 @@ class trossen_widowx_leader_follower_driver_crospi : public RobotDriver {
         
         // Robot setpoints
         std::vector<double> follower_joint_position_setpoints_;
-        std::vector<double> follower_joint_velocity_setpoints_;
 
-        std::vector<double> amplified_follower_joint_velocity_setpoints_;
+        std::vector<double> crospi_joint_velocity_setpoints_;
+
+        std::vector<double> amplified_crospi_joint_velocity_setpoints_;
 
 
-        // std::vector<double> leader_joint_position_setpoints_;
-        // std::vector<double> leader_joint_velocity_setpoints_;
+        std::vector<double> leader_joint_position_setpoints_;
+        std::vector<double> leader_joint_velocity_setpoints_;
         std::vector<double> leader_joint_external_efforts_setpoints_;
 
         std::vector<double> leader_joint_external_efforts_feedback_;

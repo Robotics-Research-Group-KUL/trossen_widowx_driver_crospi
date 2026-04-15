@@ -13,7 +13,7 @@
     "additionalProperties": true,
     "dependencies":{
         "is-trossen_widowx_leader_follower_driver_crospi":{
-          "required":["ip_address_follower", "ip_address_leader", "control_mode", "periodicity", "lead_gain", "safety_velocity_threshold", "safety_torque_threshold", "move_to_home_position_on_startup", "force_feedback_gain"],
+          "required":["ip_address_follower", "ip_address_leader", "control_mode", "periodicity", "lead_gain", "safety_velocity_threshold", "safety_torque_threshold", "move_to_home_position_on_startup", "force_feedback_gain", "K_p", "K_d"],
           "properties":{
             "ip_address_leader" : {
                     "description":"IP address of the leader robot using Ipv4 format.",
@@ -67,6 +67,18 @@
                 "default": 0.1,
                 "minimum": 0, 
                 "maximum": 1
+             },
+            "K_p" : {
+                "description":"Gain for the position feedback within the torque controller of the leader robot. Higher values will result in stronger forces felt on the leader robot in response to errors in position w.r.t. the follower robot. Modify with caution: it can cause unstable behavior. ",
+                "type":"number",
+                "default": 3.0,
+                "minimum": 0
+             },
+            "K_d" : {
+                "description":"Gain for the velocity feedback within the torque controller of the leader robot. Higher values will result in stronger forces felt on the leader robot in response to errors in velocity. Modify with caution: it can cause unstable behavior. ",
+                "type":"number",
+                "default": 2.0,
+                "minimum": 0
              }
           }
         }

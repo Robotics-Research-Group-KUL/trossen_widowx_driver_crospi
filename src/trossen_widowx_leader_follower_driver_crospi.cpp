@@ -32,6 +32,8 @@ void trossen_widowx_leader_follower_driver_crospi::construct(std::string robot_n
     periodicity = jsonchecker->asDouble(config, "periodicity");
     control_mode = jsonchecker->asString(config, "control_mode");
     lead_gain = jsonchecker->asDouble(config, "lead_gain");
+    K_p = jsonchecker->asDouble(config, "K_p");
+    K_d = jsonchecker->asDouble(config, "K_d");
     force_feedback_gain = jsonchecker->asDouble(config, "force_feedback_gain");
 
     safety_velocity_threshold = jsonchecker->asDouble(config, "safety_velocity_threshold");
@@ -59,15 +61,19 @@ void trossen_widowx_leader_follower_driver_crospi::construct(std::string robot_n
 
     //Initialize vectors
     // initial_joints_follower.resize(DOF, 0.0); 
-    follower_joint_velocity_setpoints_.resize(DOF, 0.0);
+    crospi_joint_velocity_setpoints_.resize(DOF, 0.0);
     follower_joint_position_setpoints_.resize(DOF, 0.0);
-    amplified_follower_joint_velocity_setpoints_.resize(DOF, 0.0);
+    amplified_crospi_joint_velocity_setpoints_.resize(DOF, 0.0);
     // vel_setpoint_follower.resize(DOF, 0.0);
 
     // Initialize structure data
     follower_setpoint_joint_vel_struct.data.resize(DOF, 0.0); //resize and initialize setpoint joint velocities to zero
     follower_joint_pos_struct.data.resize(DOF, 0.0);
     follower_joint_vel_struct.data.resize(DOF, 0.0);
+
+    leader_joint_position_setpoints_.resize(DOF, 0.0);
+    leader_joint_velocity_setpoints_.resize(DOF, 0.0);
+    leader_joint_external_efforts_setpoints_.resize(DOF, 0.0);
 
 }
 
@@ -162,30 +168,7 @@ bool trossen_widowx_leader_follower_driver_crospi::initialize()
     std::cout << fmt::format("Trossen leader Driver initialized with IP address: {}", driver_ip_address_leader_) << std::endl;
 
 
-    // Update the follower output
-    follower_output_ = follower_driver_->get_robot_output();
-    follower_joint_position_setpoints_ = follower_output_.joint.arm.positions;
-    follower_joint_external_efforts_feedback_ = follower_driver_->get_arm_external_efforts();
-
-
-    // Update the leader output
-    leader_output_ = leader_driver_->get_robot_output();
-    leader_joint_external_efforts_setpoints_ = {0, 0, 0, 0, 0, 0}; // Initialize leader external efforts to zero
-    leader_joint_external_efforts_feedback_ = leader_driver_->get_arm_external_efforts();
-
-
-    assert(follower_output_.joint.arm.positions.size() == DOF);
-    assert(leader_output_.joint.arm.positions.size() == DOF);
-
-    std::copy(follower_output_.joint.arm.positions.begin(), follower_output_.joint.arm.positions.end(), follower_joint_pos_struct.data.begin());
-    writeFeedbackJointPosition(follower_joint_pos_struct);
-
-    assert(follower_output_.joint.arm.velocities.size() == DOF);
-    std::copy(follower_output_.joint.arm.velocities.begin(), follower_output_.joint.arm.velocities.end(), follower_joint_vel_struct.data.begin());
-    writeFeedbackJointVelocity(follower_joint_vel_struct);
-
-
-    // ----------------------- Move robots to home position ----------------------
+        // ----------------------- Move robots to home position ----------------------
     follower_driver_->set_gripper_mode(trossen_arm::Mode::position);
     follower_driver_->set_gripper_position(0.04, 2.0, true); // Set the gripper to open position
 
@@ -224,6 +207,8 @@ bool trossen_widowx_leader_follower_driver_crospi::initialize()
     std::cout << "Starting the online control of the robots..." << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(1));
     
+
+
     // Set the arm joints to position mode
     if (control_mode == "JOINT_POSITION") {
         follower_driver_->set_arm_modes(trossen_arm::Mode::position);
@@ -274,6 +259,31 @@ bool trossen_widowx_leader_follower_driver_crospi::initialize()
         exec.spin();
     });
 
+
+        // Update the follower output
+    follower_output_ = follower_driver_->get_robot_output();
+    follower_joint_position_setpoints_ = follower_output_.joint.arm.positions;
+    follower_joint_external_efforts_feedback_ = follower_driver_->get_arm_external_efforts();
+
+
+    // Update the leader output
+    leader_output_ = leader_driver_->get_robot_output();
+    leader_joint_position_setpoints_ = leader_output_.joint.arm.positions;
+    leader_joint_velocity_setpoints_ = {0, 0, 0, 0, 0, 0};
+    leader_joint_external_efforts_setpoints_ = {0, 0, 0, 0, 0, 0}; // Initialize leader external efforts to zero
+    leader_joint_external_efforts_feedback_ = leader_driver_->get_arm_external_efforts();
+
+    assert(follower_output_.joint.arm.positions.size() == DOF);
+    assert(leader_output_.joint.arm.positions.size() == DOF);
+
+    std::copy(follower_output_.joint.arm.positions.begin(), follower_output_.joint.arm.positions.end(), follower_joint_pos_struct.data.begin());
+    writeFeedbackJointPosition(follower_joint_pos_struct);
+
+    assert(follower_output_.joint.arm.velocities.size() == DOF);
+    std::copy(follower_output_.joint.arm.velocities.begin(), follower_output_.joint.arm.velocities.end(), follower_joint_vel_struct.data.begin());
+    writeFeedbackJointVelocity(follower_joint_vel_struct);
+
+
     
 
     
@@ -290,7 +300,7 @@ void trossen_widowx_leader_follower_driver_crospi::update(volatile std::atomic<b
     update_mutex_.lock();
 
     readSetpointJointVelocity(follower_setpoint_joint_vel_struct);
-    std::copy(follower_setpoint_joint_vel_struct.data.begin(), follower_setpoint_joint_vel_struct.data.end(), follower_joint_velocity_setpoints_.begin()); // follower_joint_velocity_setpoints_ = follower_setpoint_joint_vel_struct.data;
+    std::copy(follower_setpoint_joint_vel_struct.data.begin(), follower_setpoint_joint_vel_struct.data.end(), crospi_joint_velocity_setpoints_.begin()); // crospi_joint_velocity_setpoints_ = follower_setpoint_joint_vel_struct.data;
 
 
     follower_output_ = follower_driver_->get_robot_output();
@@ -304,14 +314,14 @@ void trossen_widowx_leader_follower_driver_crospi::update(volatile std::atomic<b
 
     // TODO: Check the load of this loop
     if (std::any_of(
-      follower_joint_velocity_setpoints_.begin(), follower_joint_velocity_setpoints_.end(),
+      crospi_joint_velocity_setpoints_.begin(), crospi_joint_velocity_setpoints_.end(),
       [this](double velocity) {
         return std::isnan(velocity) || std::isinf(velocity);
       }))
     {
         //  break the loop if any velocity is NaN or INF
-        follower_joint_velocity_setpoints_.clear();
-        follower_joint_velocity_setpoints_.resize(6, 0.0); // Reset to zero
+        crospi_joint_velocity_setpoints_.clear();
+        crospi_joint_velocity_setpoints_.resize(6, 0.0); // Reset to zero
         stopFlag.store(true);
         std::cerr << "Invalid joint velocity command detected" << std::endl;
         return; // Exit the update function
@@ -349,15 +359,44 @@ void trossen_widowx_leader_follower_driver_crospi::update(volatile std::atomic<b
                 return; // Exit the update function
             }
 
-            // follower_joint_position_setpoints_[i] += follower_joint_velocity_setpoints_[i]*periodicity; //simple integration
-            // amplified_follower_joint_velocity_setpoints_[i] = lead_gain * follower_joint_velocity_setpoints_[i];
-            follower_joint_position_setpoints_[i] = leader_output_.joint.arm.positions[i] + lead_gain*follower_joint_velocity_setpoints_[i]*periodicity; //Position setpoints for follower
-            leader_joint_external_efforts_setpoints_[i] = -force_feedback_gain * follower_joint_external_efforts_feedback_[i]; //External torque setpoints for leader
+            // follower_joint_position_setpoints_[i] += crospi_joint_velocity_setpoints_[i]*periodicity; //simple integration
+            // amplified_crospi_joint_velocity_setpoints_[i] = lead_gain * crospi_joint_velocity_setpoints_[i];
+            // follower_joint_position_setpoints_[i] = (follower_output_.joint.arm.positions[i] + crospi_joint_velocity_setpoints_[i]*periodicity) - leader_output_.joint.arm.positions[i]; //Position setpoints for follower
+            
+            // leader_joint_external_efforts_setpoints_[i] = -force_feedback_gain * follower_joint_external_efforts_feedback_[i]; //External torque setpoints for leader
+            
+            // leader_joint_external_efforts_setpoints_[i] =  -force_feedback_gain * follower_joint_external_efforts_feedback_[i] + K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i]); //External torque setpoints for leader
+            // leader_joint_external_efforts_setpoints_[i] =  -force_feedback_gain * follower_joint_external_efforts_feedback_[i] + K_p * (lead_gain*crospi_joint_velocity_setpoints_[i]*periodicity); //Same as  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
+            
+            //Option without haptic feedback, just a spring for the leader robot:
+            // follower_joint_position_setpoints_[i] += crospi_joint_velocity_setpoints_[i]*periodicity;
+            // leader_joint_external_efforts_setpoints_[i] = K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
+            //                                             + K_d * (crospi_joint_velocity_setpoints_[i] - leader_output_.joint.arm.velocities[i]); //Same as  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
+            
+
+            // Option 1: the first one that we tried:
+            // follower_joint_position_setpoints_[i] = leader_output_.joint.arm.positions[i] + lead_gain*crospi_joint_velocity_setpoints_[i]*periodicity; //Position setpoints for follower
+            // leader_joint_external_efforts_setpoints_[i] = -force_feedback_gain * follower_joint_external_efforts_feedback_[i] + K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i]); //Same as  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
+            
+
+            // Option 2: the second one that we tried, now with velocity term:
+            follower_joint_position_setpoints_[i] = leader_output_.joint.arm.positions[i]; //Position setpoints for follower
+            
+            leader_joint_position_setpoints_[i] += crospi_joint_velocity_setpoints_[i]*periodicity; //simple integration (open loop)
+            // leader_joint_position_setpoints_[i] = leader_output_.joint.arm.positions[i] + lead_gain*crospi_joint_velocity_setpoints_[i]*periodicity; //closed-loop position setpoint
+            leader_joint_velocity_setpoints_[i] = crospi_joint_velocity_setpoints_[i];
+            leader_joint_external_efforts_setpoints_[i] = -force_feedback_gain * follower_joint_external_efforts_feedback_[i] 
+                                                        + K_p * (leader_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
+                                                        + K_d * (leader_joint_velocity_setpoints_[i] - leader_output_.joint.arm.velocities[i]); //Same as  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
+            
+
+            // The following is an stiffness controller in jointspace (still needs damping):
+            // leader_joint_external_efforts_setpoints_[i] =  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i]); //Same as  K_p * (follower_joint_position_setpoints_[i] - leader_output_.joint.arm.positions[i])
 
 
         }
 
-        std::cout << "last joint position: " << follower_joint_position_setpoints_[5] << std::endl;
+        // std::cout << "last joint position: " << follower_joint_position_setpoints_[5] << std::endl;
         // follower_driver_->set_arm_positions(follower_joint_position_setpoints_,
         //                             0.0, // goal_time
         //                             false // blocking is false, so it will not wait for the goal to be reached
@@ -366,7 +405,7 @@ void trossen_widowx_leader_follower_driver_crospi::update(volatile std::atomic<b
         follower_driver_->set_arm_positions(follower_joint_position_setpoints_,
                         0.0, // goal_time
                         false, // blocking is false, so it will not wait for the goal to be reached
-                        follower_joint_velocity_setpoints_); // feedforward velocities coming from Crospi
+                        crospi_joint_velocity_setpoints_); // feedforward velocities coming from Crospi
     
 
         leader_driver_->set_arm_external_efforts(
@@ -385,8 +424,8 @@ void trossen_widowx_leader_follower_driver_crospi::update(volatile std::atomic<b
     //             std::cerr << "Velocity of joint " << i+1 << " is too high: " << follower_output_.joint.arm.velocities[i] << std::endl;
     //             return; // Exit the update function
     //         }
-    //         // follower_joint_position_setpoints_[i] += follower_joint_velocity_setpoints_[i]*periodicity; //simple integration
-    //         // follower_joint_position_setpoints_[i] = follower_output_.joint.arm.positions[i] + follower_joint_velocity_setpoints_[i]*periodicity*lead_gain; //simple integration
+    //         // follower_joint_position_setpoints_[i] += crospi_joint_velocity_setpoints_[i]*periodicity; //simple integration
+    //         // follower_joint_position_setpoints_[i] = follower_output_.joint.arm.positions[i] + crospi_joint_velocity_setpoints_[i]*periodicity*lead_gain; //simple integration
     //         follower_joint_position_setpoints_[i] = follower_output_.joint.arm.positions[i]; //I think this does not work because the robot keeps falling and falling due to gravity and low gains of the position loop.
 
 
@@ -397,7 +436,7 @@ void trossen_widowx_leader_follower_driver_crospi::update(volatile std::atomic<b
     //                                 false); // blocking is false, so it will not wait for the goal to be reached
     // }
     else if (control_mode == "JOINT_VELOCITY") {
-        follower_driver_->set_arm_velocities(follower_joint_velocity_setpoints_,
+        follower_driver_->set_arm_velocities(crospi_joint_velocity_setpoints_,
                                     periodicity, // goal_time
                                     false); // blocking is false, so it will not wait for the goal to be reached
     }
