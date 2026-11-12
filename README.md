@@ -4,8 +4,19 @@ This package contains a driver for controlling the Trossen WidowX using crospi_c
 
 ## Installation
 
-Clone the [interfaces package](https://github.com/Robotics-Research-Group-KUL/trossen_widowx_interfaces) in your workspace.
-Install the [C++ trossen driver](https://docs.trossenrobotics.com/trossen_arm/main/getting_started/software_setup.html) before compiling the crospi trossen driver. 
+This driver requires the [interfaces package](https://github.com/Robotics-Research-Group-KUL/trossen_widowx_interfaces) and the [Trossen C++ driver](https://docs.trossenrobotics.com/trossen_arm/main/getting_started/software_setup.html) (`libtrossen_arm`). The Trossen C++ driver is a CMake package with a *package.xml*, so both can simply be cloned into your workspace and built with *colcon*:
+
+```bash
+cd <your_ws>/src
+git clone https://github.com/Robotics-Research-Group-KUL/trossen_widowx_interfaces.git
+git clone https://github.com/TrossenRobotics/trossen_arm.git
+cd <your_ws>
+colcon build --packages-up-to trossen_widowx_driver_crospi
+```
+
+Alternatively, install the Trossen C++ driver system-wide as described in its [documentation](https://docs.trossenrobotics.com/trossen_arm/main/getting_started/software_setup.html) (`cmake` + `make install`); CMake then finds it with `find_package(libtrossen_arm)`.
+
+Note: Trossen officially supports the C++ driver on Ubuntu 20.04, 22.04 and 24.04 (it is distributed as a prebuilt static library).
 
 ## Documentation
 
